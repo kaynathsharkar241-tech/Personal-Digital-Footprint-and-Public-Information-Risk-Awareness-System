@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block heading %}Hi, {{ user.nickname }}{% endblock %}
+{% block body %}
+<p class="sub">You're signed in. Monitoring, the exposure questionnaire and case tracking will appear here as the other features are built.</p>
+<a class="button" href="{{ url_for('auth.settings_page') }}">Sign-in &amp; recovery settings</a>
+<form method="post" action="{{ url_for('auth.logout') }}"><button class="link">Sign out</button></form>
+{% endblock %}

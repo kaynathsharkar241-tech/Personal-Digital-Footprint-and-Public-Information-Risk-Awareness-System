@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block heading %}Welcome back{% endblock %}
+{% block body %}
+<button id="passkey-login-btn" class="primary">Sign in with Face ID</button>
+
+<details>
+  <summary>Use my PIN instead</summary>
+  <label for="pin-nickname">Nickname</label>
+  <input id="pin-nickname" type="text" autocomplete="username" maxlength="30">
+  <label for="pin">6-digit PIN</label>
+  <input id="pin" type="password" inputmode="numeric" pattern="\d{6}" maxlength="6" autocomplete="current-password">
+  <button id="pin-login-btn">Sign in with PIN</button>
+</details>
+
+<p class="links">
+  <a href="{{ url_for('auth.recovery_page') }}">Lost your device? Use a recovery code</a><br>
+  New here? <a href="{{ url_for('auth.signup_page') }}">Create an account</a>
+</p>
+{% endblock %}
