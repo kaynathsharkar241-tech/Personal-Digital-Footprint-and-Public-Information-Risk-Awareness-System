@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <p>This short questionnaire helps you think about how much of your information may be exposed online.
+       Answer each question honestly. Nothing is saved.</p>
+</div>
+
+<!-- Questions (one is shown at a time) -->
+<div class="card" id="quiz-section">
+    <p id="progress-text"></p>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+    {% for q in questions %}
+    <div class="question">
+        <h3>{{ loop.index }}. {{ q }}</h3>
+        <!-- value: 0 = safest answer, 2 = riskiest answer. -->
+        {% if loop.index in [4, 5] %}
+        <label class="option"><input type="radio" name="q{{ loop.index }}" value="0"> Yes</label>
+        <label class="option"><input type="radio" name="q{{ loop.index }}" value="1"> Sometimes / Not sure</label>
+        <label class="option"><input type="radio" name="q{{ loop.index }}" value="2"> No</label>
+        {% else %}
+        <label class="option"><input type="radio" name="q{{ loop.index }}" value="2"> Yes</label>
+        <label class="option"><input type="radio" name="q{{ loop.index }}" value="1"> Sometimes / Not sure</label>
+        <label class="option"><input type="radio" name="q{{ loop.index }}" value="0"> No</label>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="error" id="question-error"></div>
+    <button type="button" class="btn btn-light" id="prev-btn">Previous</button>
+    <button type="button" class="btn" id="next-btn">Next</button>
+    <button type="button" class="btn" id="submit-btn">Submit</button>
+</div>
+
+<!-- Sample result (shown after Submit) -->
+<div class="card hidden" id="result-section">
+    <h2>Your Result <span class="tag">sample result</span></h2>
+    <p>Exposure-awareness score: <strong id="result-score"></strong> (higher means more exposure)</p>
+    <p>Risk category: <strong id="result-category"></strong></p>
+    <p id="result-explanation"></p>
+    <h3>Basic Recommendations</h3>
+    <ul>
+        <li>Review the privacy settings of your social media accounts.</li>
+        <li>Avoid using the same username everywhere.</li>
+        <li>Think before sharing personal details in public posts.</li>
+    </ul>
+    <p class="hint">This score is a simple demo calculation, not a real risk assessment.</p>
+    <button type="button" class="btn btn-light" id="retake-btn">Take Again</button>
+    <a href="{{ url_for('dashboard') }}" class="btn">Back to Dashboard</a>
+</div>
+
+{% endblock %}

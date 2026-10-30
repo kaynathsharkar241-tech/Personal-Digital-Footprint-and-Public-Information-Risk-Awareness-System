@@ -1,0 +1,43 @@
+<!-- login.html: stand-alone page (does not use the sidebar layout) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Privacy Monitor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="auth-page">
+    <div class="auth-box">
+        <h1>Privacy Monitor</h1>
+        <p class="demo-note">Demo only: there is no real login yet. Any valid-looking email and password will open the dashboard.</p>
+
+        <form class="validate" data-redirect="{{ url_for('dashboard') }}" data-message-box="form-message">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" required>
+            <div class="error"></div>
+
+            <label for="password">Password</label>
+            <input type="password" id="password" required>
+            <div class="error"></div>
+
+            <button type="submit" class="btn">Login</button>
+        </form>
+
+        <div id="form-message" class="message"></div>
+
+        <p class="hint" style="text-align:center; margin: 14px 0 0;">or</p>
+
+        <button type="button" class="btn btn-light" data-target="form-message"
+                data-message="Passkey login is a placeholder and is not available yet.">Login with Passkey (placeholder)</button>
+
+        <div class="auth-links">
+            <a href="#" id="forgot-link" data-message="Password reset is a placeholder and is not available yet." data-target="form-message">Forgot password?</a><br>
+            Don't have an account? <a href="{{ url_for('register') }}">Register</a>
+        </div>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

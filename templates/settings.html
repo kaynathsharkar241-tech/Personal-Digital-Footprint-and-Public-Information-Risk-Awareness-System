@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+
+<form class="validate" data-message-box="form-message"
+      data-success="Settings are valid (demo only, nothing was saved).">
+
+    <div class="card">
+        <h2>Profile Settings</h2>
+        <label for="full_name">Full Name</label>
+        <input type="text" id="full_name" value="{{ user.name }}" required>
+        <div class="error"></div>
+
+        <label for="email">Email Address</label>
+        <input type="email" id="email" value="{{ user.email }}" required>
+        <div class="error"></div>
+
+        <button type="button" class="btn btn-light" data-target="form-message"
+                data-message="Edit Profile is a placeholder.">Edit Profile</button>
+    </div>
+
+    <div class="card">
+        <h2>Account Security</h2>
+        <button type="button" class="btn btn-light" data-target="form-message" data-message="Change Password is a placeholder.">Change Password</button>
+        <button type="button" class="btn btn-light" data-target="form-message" data-message="Passkey Management is a placeholder.">Passkey Management</button>
+        <button type="button" class="btn btn-light" data-target="form-message" data-message="Recovery Codes is a placeholder.">Recovery Codes</button>
+        <a href="{{ url_for('login') }}" class="btn">Logout</a>
+    </div>
+
+    <div class="card">
+        <h2>Notification Settings</h2>
+        <label class="inline-label"><input type="checkbox" checked> Email notifications</label><br>
+        <label class="inline-label"><input type="checkbox" checked> New finding alerts</label><br>
+        <label class="inline-label"><input type="checkbox"> Weekly summary</label>
+        <p class="hint">No real emails are sent in this demo.</p>
+    </div>
+
+    <div class="card">
+        <h2>Monitoring Preferences</h2>
+        <label for="scan_frequency">Default scan frequency</label>
+        <select id="scan_frequency">
+            <option>Daily</option>
+            <option selected>Weekly</option>
+            <option>Monthly</option>
+        </select>
+
+        <div class="toggle-box">
+            <label class="inline-label"><input type="checkbox" class="monitor-toggle" data-status="monitor-status" checked> Enable monitoring</label>
+            <span id="monitor-status"><strong>Monitoring is ON (demo)</strong></span>
+        </div>
+    </div>
+
+    <button type="submit" class="btn">Save Changes</button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-light">Cancel</a>
+    <div id="form-message" class="message"></div>
+</form>
+
+{% endblock %}

@@ -1,0 +1,68 @@
+<!-- register.html: stand-alone page. Field order: name, email, password, confirm, passkey -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Privacy Monitor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="auth-page">
+    <div class="auth-box">
+        <h1>Create Account</h1>
+        <p class="demo-note">Demo only: no account is created and nothing is saved.</p>
+
+        <form class="validate" data-redirect="{{ url_for('login') }}" data-message-box="form-message"
+              data-success="Form is valid (demo). Going to the login page...">
+            <label for="full_name">1. Full Name</label>
+            <input type="text" id="full_name" required>
+            <div class="error"></div>
+
+            <label for="email">2. Email Address</label>
+            <input type="email" id="email" required>
+            <div class="error"></div>
+
+            <label for="password">3. Password</label>
+            <input type="password" id="password" required data-minlength="8">
+            <div class="hint">At least 8 characters.</div>
+            <div class="error"></div>
+
+            <label for="confirm_password">4. Confirm Password</label>
+            <input type="password" id="confirm_password" required>
+            <div class="error"></div>
+
+            <label>5. Set Up Passkey / Face ID</label>
+            <div class="passkey-box">
+                <h3>Set Up Passkey</h3>
+                <!-- Simple fingerprint icon drawn with SVG (no image file needed) -->
+                <svg class="fingerprint" viewBox="0 0 24 24" width="48" height="48" fill="none"
+                     stroke="#52785B" stroke-width="1.6" stroke-linecap="round" aria-label="Fingerprint icon">
+                    <path d="M12 3a8 8 0 0 0-8 8v2"/>
+                    <path d="M12 3a8 8 0 0 1 8 8v3"/>
+                    <path d="M7 12v2a5 5 0 0 0 1.5 3.5"/>
+                    <path d="M12 7a4 4 0 0 0-4 4"/>
+                    <path d="M12 7a4 4 0 0 1 4 4v3a8 8 0 0 1-1 4"/>
+                    <path d="M12 11v3a11 11 0 0 1-1.5 5.5"/>
+                    <path d="M4 16a14 14 0 0 0 1 3"/>
+                </svg>
+                <p><strong>Register with Face ID / Fingerprint</strong></p>
+                <p class="hint">Use your device's built-in security to create a passkey.</p>
+                <button type="button" class="btn" data-target="passkey-message"
+                        data-message="Passkey setup is a placeholder. No passkey was created.">Set Up Passkey</button>
+                <div id="passkey-message" class="message"></div>
+            </div>
+
+            <button type="submit" class="btn">Register</button>
+        </form>
+
+        <div id="form-message" class="message"></div>
+
+        <div class="auth-links">
+            Already have an account? <a href="{{ url_for('login') }}">Login</a>
+        </div>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!-- base.html: shared layout (sidebar + top bar) used by every page after login -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - Privacy Monitor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="layout">
+
+    <!-- Left sidebar -->
+    <aside class="sidebar">
+        <h2>Privacy Monitor</h2>
+        <nav>
+            <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">Dashboard</a>
+            <a href="{{ url_for('monitoring') }}" class="{{ 'active' if request.endpoint == 'monitoring' }}">Monitoring Setup</a>
+            <a href="{{ url_for('scan_results') }}" class="{{ 'active' if request.endpoint == 'scan_results' }}">Scan Results</a>
+            <a href="{{ url_for('questionnaire') }}" class="{{ 'active' if request.endpoint == 'questionnaire' }}">Questionnaire</a>
+            <a href="{{ url_for('cases') }}" class="{{ 'active' if request.endpoint == 'cases' }}">Case Management</a>
+            <a href="{{ url_for('settings') }}" class="{{ 'active' if request.endpoint == 'settings' }}">Settings</a>
+        </nav>
+    </aside>
+
+    <!-- Main area -->
+    <div class="main">
+        <header class="topbar">
+            <h1>{{ page_title }}</h1>
+            <div class="topbar-right">
+                <a href="{{ url_for('dashboard') }}#notifications" title="Notifications">&#128276; Notifications</a>
+                <span class="profile">&#128100; {{ user.name }}</span>
+            </div>
+        </header>
+
+        <main class="content">
+            <p class="demo-note">Demo version: all data shown is sample data. No real scan has taken place.</p>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

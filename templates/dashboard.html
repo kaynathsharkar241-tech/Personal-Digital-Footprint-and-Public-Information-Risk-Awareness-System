@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Welcome section -->
+<div class="card">
+    <h2>Privacy Monitor</h2>
+    <p>Welcome back, <strong>{{ user.name }}</strong>. This page gives a quick overview of your (sample) digital footprint.</p>
+    <p class="hint">Profile: {{ user.name }} &middot; {{ user.email }}</p>
+</div>
+
+<!-- Overview statistics -->
+<h2>Overview <span class="tag">sample data</span></h2>
+<div class="grid">
+    <div class="stat"><div class="number">{{ stats.total }}</div><div class="label">Total Findings</div></div>
+    <div class="stat"><div class="number">{{ stats.score }}/100</div><div class="label">Exposure Score</div></div>
+    <div class="stat"><div class="number">{{ stats.high }}</div><div class="label">High Risk</div></div>
+    <div class="stat"><div class="number">{{ stats.medium }}</div><div class="label">Medium Risk</div></div>
+    <div class="stat"><div class="number">{{ stats.low }}</div><div class="label">Low Risk</div></div>
+</div>
+
+<!-- Recent activity -->
+<div class="card">
+    <h2>Recent Activity</h2>
+    <p>Last scan date: <strong>{{ stats.last_scan }}</strong></p>
+    <p>Number of findings: <strong>{{ stats.total }}</strong></p>
+    <p>Recent scan status: <strong>{{ stats.status }}</strong></p>
+    <p class="hint">These values are demonstration data. No real scan has been run.</p>
+</div>
+
+<!-- Quick actions -->
+<div class="card">
+    <h2>Quick Actions</h2>
+    <button type="button" class="btn" data-target="scan-message"
+            data-message="Scan Now is a placeholder. Real scanning will be added later.">Scan Now</button>
+    <a href="{{ url_for('monitoring') }}" class="btn">Manage Monitoring</a>
+    <a href="{{ url_for('scan_results') }}" class="btn">View Results</a>
+    <div id="scan-message" class="message"></div>
+</div>
+
+<!-- Notifications -->
+<div class="card" id="notifications">
+    <h2>Notifications <span class="tag">sample data</span></h2>
+    <ul>
+        {% for note in notifications %}
+        <li>{{ note }}</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<!-- Privacy recommendations -->
+<div class="card">
+    <h2>Privacy Recommendations</h2>
+    <ul>
+        <li>Use a different username on different platforms.</li>
+        <li>Set your social media profiles to private where possible.</li>
+        <li>Use a unique password for every account.</li>
+        <li>Remove old posts that contain personal details.</li>
+    </ul>
+    <a href="{{ url_for('questionnaire') }}" class="btn btn-light">Take the Privacy Questionnaire</a>
+</div>
+
+{% endblock %}

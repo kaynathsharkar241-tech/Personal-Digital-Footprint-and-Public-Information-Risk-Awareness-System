@@ -1,0 +1,162 @@
+/* style.css - one stylesheet for every page of Privacy Monitor */
+
+/* ---------- Colors (kept in one place so they are easy to change) ---------- */
+:root {
+    --cream: #F6F5EC;
+    --light-green: #DDEBDD;
+    --sage: #A8C5A5;
+    --dark-green: #52785B;
+    --heading: #315B42;
+    --white: #FFFFFF;
+    --text: #333333;
+}
+
+/* ---------- Basic page setup ---------- */
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    line-height: 1.5;
+}
+
+h1, h2, h3 { color: var(--heading); margin-top: 0; }
+a { color: var(--dark-green); }
+
+/* ---------- Layout: sidebar + main ---------- */
+.layout { display: flex; min-height: 100vh; }
+
+.sidebar {
+    width: 220px;
+    background: var(--light-green);
+    border-right: 2px solid var(--sage);
+    padding: 20px 15px;
+}
+.sidebar h2 { font-size: 20px; margin-bottom: 20px; }
+.sidebar nav a {
+    display: block;
+    padding: 10px 12px;
+    margin-bottom: 5px;
+    color: var(--heading);
+    text-decoration: none;
+    border: 1px solid transparent;
+}
+.sidebar nav a:hover { background: var(--white); border-color: var(--sage); }
+.sidebar nav a.active { background: var(--dark-green); color: var(--white); }
+
+.main { flex: 1; min-width: 0; }
+
+.topbar {
+    background: var(--white);
+    border-bottom: 2px solid var(--sage);
+    padding: 12px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.topbar h1 { margin: 0; font-size: 22px; }
+.topbar-right a { margin-right: 15px; text-decoration: none; }
+.profile { color: var(--heading); font-weight: bold; }
+
+.content { padding: 25px; max-width: 1100px; }
+
+.demo-note {
+    background: var(--light-green);
+    border: 1px dashed var(--dark-green);
+    padding: 8px 12px;
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+
+/* ---------- Cards ---------- */
+.card {
+    background: var(--white);
+    border: 1px solid var(--sage);
+    padding: 18px;
+    margin-bottom: 20px;
+}
+.card h2 { font-size: 18px; border-bottom: 1px solid var(--light-green); padding-bottom: 8px; }
+
+.grid { display: grid; gap: 15px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 20px; }
+.stat { background: var(--white); border: 1px solid var(--sage); padding: 15px; text-align: center; }
+.stat .number { font-size: 30px; font-weight: bold; color: var(--heading); }
+.stat .label { font-size: 13px; }
+
+/* ---------- Buttons ---------- */
+.btn {
+    display: inline-block;
+    background: var(--dark-green);
+    color: var(--white);
+    border: 1px solid var(--dark-green);
+    padding: 9px 16px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
+    margin: 3px 3px 3px 0;
+}
+.btn:hover { background: var(--heading); }
+.btn-light { background: var(--white); color: var(--dark-green); }
+.btn-light:hover { background: var(--light-green); }
+.btn-small { padding: 4px 10px; font-size: 13px; }
+
+/* ---------- Forms ---------- */
+label { display: block; font-weight: bold; margin: 12px 0 4px; }
+input[type="text"], input[type="email"], input[type="password"],
+input[type="date"], input[type="url"], select, textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--sage);
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    background: var(--white);
+}
+textarea { min-height: 90px; }
+.inline-label { display: inline-block; font-weight: normal; margin: 6px 15px 6px 0; }
+.error { color: #9B2C2C; font-size: 13px; min-height: 16px; }
+.hint { font-size: 13px; color: #555; }
+
+/* ---------- Tables ---------- */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: var(--white); }
+th, td { border: 1px solid var(--sage); padding: 8px; text-align: left; font-size: 14px; }
+th { background: var(--light-green); color: var(--heading); }
+
+/* ---------- Risk and status labels ---------- */
+.tag { padding: 2px 8px; border: 1px solid var(--dark-green); font-size: 12px; background: var(--light-green); }
+.risk-High { background: #E6B8B0; border-color: #9B2C2C; }
+.risk-Medium { background: #F0E2B0; border-color: #8A6D1D; }
+.risk-Low { background: var(--light-green); }
+
+/* ---------- Login / register pages ---------- */
+.auth-page { display: flex; justify-content: center; padding: 30px 15px; }
+.auth-box { background: var(--white); border: 1px solid var(--sage); padding: 25px; width: 100%; max-width: 420px; }
+.auth-box h1 { text-align: center; }
+.auth-box .btn { width: 100%; text-align: center; margin-top: 12px; }
+.auth-links { text-align: center; font-size: 14px; margin-top: 15px; }
+.passkey-box { background: var(--light-green); border: 1px solid var(--sage); padding: 15px; margin-top: 18px; text-align: center; }
+.passkey-box .fingerprint { display: block; margin: 0 auto 8px; }
+.passkey-box .btn { margin-top: 6px; }
+
+/* ---------- Photo preview, toggles, questionnaire ---------- */
+.preview { max-width: 180px; max-height: 180px; border: 1px solid var(--sage); margin-top: 10px; display: none; }
+.toggle-box { background: var(--light-green); border: 1px solid var(--sage); padding: 8px 12px; margin-top: 10px; }
+.progress-bar { background: var(--light-green); border: 1px solid var(--sage); height: 16px; margin: 8px 0 18px; }
+.progress-fill { background: var(--dark-green); height: 100%; width: 0; }
+.question { display: none; }
+.question.active { display: block; }
+.option { display: block; font-weight: normal; padding: 8px; border: 1px solid var(--sage); margin-bottom: 6px; background: var(--white); }
+.hidden { display: none; }
+.message { background: var(--light-green); border: 1px solid var(--dark-green); padding: 8px 12px; margin-top: 10px; display: none; }
+
+/* ---------- Responsive: phones and small screens ---------- */
+@media (max-width: 700px) {
+    .layout { flex-direction: column; }
+    .sidebar { width: 100%; border-right: none; border-bottom: 2px solid var(--sage); padding: 12px; }
+    .sidebar nav { display: flex; flex-wrap: wrap; gap: 4px; }
+    .sidebar nav a { margin-bottom: 0; padding: 6px 10px; font-size: 14px; }
+    .topbar { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .content { padding: 15px; }
+}

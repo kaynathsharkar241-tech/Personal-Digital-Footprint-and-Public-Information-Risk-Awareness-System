@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Create a case -->
+<div class="card">
+    <h2>Create a Case</h2>
+    <form class="validate" data-message-box="case-message"
+          data-success="Case form is valid (demo only, no case was saved).">
+        <label for="case_title">Case Title</label>
+        <input type="text" id="case_title" required>
+        <div class="error"></div>
+
+        <label for="case_category">Case Category</label>
+        <select id="case_category">
+            {% for c in categories %}
+            <option>{{ c }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="case_desc">Description</label>
+        <textarea id="case_desc" required></textarea>
+        <div class="error"></div>
+
+        <label for="case_url">Source URL</label>
+        <input type="url" id="case_url" placeholder="https://example.com/page">
+
+        <label for="case_date">Date Reported</label>
+        <input type="date" id="case_date">
+
+        <button type="submit" class="btn">Submit Case</button>
+        <div id="case-message" class="message"></div>
+    </form>
+</div>
+
+<!-- Case list -->
+<div class="card">
+    <h2>Case List <span class="tag">sample data</span></h2>
+    <p class="hint">Possible statuses: Open, Under Review, Resolved.</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Case ID</th><th>Case Title</th><th>Date Created</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+                {% for c in cases %}
+                <tr>
+                    <td>{{ c.id }}</td><td>{{ c.title }}</td><td>{{ c.date }}</td>
+                    <td><span class="tag">{{ c.status }}</span></td>
+                    <td><a href="#case-details" class="btn btn-small">View Details</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Case details -->
+<div class="card" id="case-details">
+    <h2>Case Details <span class="tag">sample: CASE-001</span></h2>
+    <h3>Case Description</h3>
+    <p>Sample description: a profile using my name and photo was found on a social site.</p>
+
+    <h3>Related Findings</h3>
+    <ul>
+        {% for f in findings %}
+        <li>{{ f.finding }} ({{ f.source }}) - sample</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<!-- Evidence upload -->
+<div class="card">
+    <h2>Evidence</h2>
+    <input type="file" id="evidence" accept="image/*,.pdf,.doc,.docx">
+    <p id="evidence-name" class="hint">No file selected.</p>
+    <button type="button" id="remove-evidence" class="btn btn-light btn-small">Remove File</button>
+    <p class="hint">Files are not uploaded or stored anywhere in this demo.</p>
+</div>
+
+<!-- AI assessment placeholder -->
+<div class="card">
+    <h2>AI Assessment <span class="tag">placeholder</span></h2>
+    <p><strong>Assessment status:</strong> Not run. No AI assessment has been performed.</p>
+    <p><strong>Possible risk explanation:</strong> Will appear here once AI features are added.</p>
+    <p><strong>Suggested actions:</strong> Will appear here once AI features are added.</p>
+</div>
+
+<!-- Response actions -->
+<div class="card">
+    <h2>Response Actions</h2>
+    <button type="button" class="btn" data-target="action-message" data-message="Contact Platform: placeholder, no message was sent.">Contact Platform</button>
+    <button type="button" class="btn" data-target="action-message" data-message="Report Content: placeholder, nothing was reported.">Report Content</button>
+    <a href="{{ url_for('settings') }}" class="btn">Review Privacy Settings</a>
+
+    <label for="notes">Response Notes</label>
+    <textarea id="notes" placeholder="Write your notes here"></textarea>
+    <button type="button" class="btn" data-target="action-message" data-message="Notes saved (demo only, nothing was stored).">Save Response Notes</button>
+    <div id="action-message" class="message"></div>
+</div>
+
+<!-- Recommendations -->
+<div class="card">
+    <h2>Privacy Recommendations</h2>
+    <ul>
+        <li>Keep screenshots and links as evidence before reporting content.</li>
+        <li>Use the platform's report option for fake or misused profiles.</li>
+        <li>Change passwords if you think an account is affected.</li>
+    </ul>
+</div>
+
+{% endblock %}

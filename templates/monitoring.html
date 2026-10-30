@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <p>Enter the information you want to monitor. Privacy Monitor will help you understand what information may be publicly available online.</p>
+</div>
+
+<form class="validate" data-message-box="form-message"
+      data-success="Monitoring information is valid (demo only, nothing was saved).">
+
+    <div class="card">
+        <h2>Personal Information</h2>
+
+        <label for="full_name">Full Name</label>
+        <input type="text" id="full_name" required>
+        <div class="error"></div>
+
+        <label for="username">Username</label>
+        <input type="text" id="username">
+
+        <label for="email">Email Address</label>
+        <input type="email" id="email" required>
+        <div class="error"></div>
+
+        <label for="terms">Additional Search Terms</label>
+        <textarea id="terms" placeholder="Example: nickname, phone number, school name"></textarea>
+    </div>
+
+    <div class="card">
+        <h2>Reference Photo</h2>
+        <input type="file" id="photo" accept="image/*">
+        <img id="photo-preview" class="preview" alt="Selected photo preview">
+        <br>
+        <button type="button" id="remove-photo" class="btn btn-light btn-small">Remove Photo</button>
+    </div>
+
+    <div class="card">
+        <h2>Monitoring Settings</h2>
+        <label>Frequency</label>
+        <label class="inline-label"><input type="radio" name="frequency" value="daily"> Daily monitoring</label>
+        <label class="inline-label"><input type="radio" name="frequency" value="weekly" checked> Weekly monitoring</label>
+        <label class="inline-label"><input type="radio" name="frequency" value="monthly"> Monthly monitoring</label>
+
+        <div class="toggle-box">
+            <label class="inline-label"><input type="checkbox" class="monitor-toggle" data-status="monitor-status" checked> Enable monitoring</label>
+            <span id="monitor-status"><strong>Monitoring is ON (demo)</strong></span>
+            <p class="hint">Untick the box to disable monitoring.</p>
+        </div>
+    </div>
+
+    <button type="submit" class="btn">Save Monitoring Information</button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-light">Cancel</a>
+    <div id="form-message" class="message"></div>
+</form>
+
+{% endblock %}
