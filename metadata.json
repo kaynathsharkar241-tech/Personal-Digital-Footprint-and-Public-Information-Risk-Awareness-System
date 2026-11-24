@@ -1,0 +1,6 @@
+{
+  "name": "Privacy Monitor",
+  "description": "Personal Digital Footprint and Public Information Risk Awareness System — discover public exposure, assess privacy risks with AI, manage misuse cases with encrypted evidence, verify identity, and create or edit images.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
