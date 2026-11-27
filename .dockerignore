@@ -1,0 +1,15 @@
+node_modules
+.venv-face
+.git
+.env
+.env.*
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+**/__pycache__
+**/*.pyc
+dev-dist
+dist
+coverage
