@@ -32,7 +32,7 @@ function buildQueries(ctx: ScanContext): string[] {
     const clean = domain.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
     if (clean.length >= 4) identifiers.add(`"${clean}"`);
   }
-  return Array.from(identifiers).slice(0, 3).map((term) => `${term} public profile OR contact OR mention`);
+  return Array.from(identifiers).slice(0, 5);
 }
 
 function categoryForUrl(url: string): NormalizedFinding['category'] {
@@ -78,6 +78,23 @@ export const tavilySearchProvider: OsintProvider = {
     }
 
     const findings: NormalizedFinding[] = [];
+    const normalizeText = (value: string) =>
+      value.normalize('NFKC')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const identifiers = [
+      ctx.fullName,
+      ctx.username.replace(/^@/, ''),
+      ...ctx.terms,
+      ...ctx.domains
+    ]
+      .map(normalizeText)
+      .filter(value => value.length >= 3);
+
+
+    const seenUrls = new Set<string>();
     let usedCache = false;
     try {
       for (const query of queries) {
@@ -100,7 +117,7 @@ export const tavilySearchProvider: OsintProvider = {
               query,
               topic: 'general',
               search_depth: 'basic',
-              max_results: 5,
+              max_results: 10,
               include_answer: false,
               include_raw_content: false,
             }),
@@ -126,8 +143,27 @@ export const tavilySearchProvider: OsintProvider = {
         for (const item of (payload.results ?? [])) {
           const url = String(item.url || '');
           if (!/^https?:\/\//i.test(url)) continue;
+          const normalizedUrl = new URL(url);
+          normalizedUrl.hash = '';
+
+          const canonicalUrl = normalizedUrl.toString();
+
+          if (seenUrls.has(canonicalUrl)) continue;
+          seenUrls.add(canonicalUrl);
+
           const title = String(item.title || url).slice(0, 240);
           const content = String(item.content || '').slice(0, 700);
+
+          const searchable = normalizeText(
+            `${title} ${String(item.content || '')} ${url}`
+          );
+
+          const matchedIdentifiers = identifiers.filter(
+            identifier => searchable.includes(identifier)
+          );
+
+          if (matchedIdentifiers.length === 0) continue;
+
           const score = Number.isFinite(Number(item.score)) ? Math.max(0, Math.min(1, Number(item.score))) : 0.45;
           findings.push({
             title: `Public web result: ${title}`,
@@ -136,11 +172,25 @@ export const tavilySearchProvider: OsintProvider = {
             sourceUrl: url,
             foundAt: retrievedAt,
             evidence: content || `Tavily returned this public URL for query: ${query}`,
-            explanation: 'This is a potential public-web match returned by Tavily, not proof that the page refers to the account owner. Open the source and verify it manually.',
+            explanation: 'A monitored identifier appears in this indexed result. Search relevance does not establish identity, harmful exposure, or privacy risk. Review the original source before confirming this finding.',
             confidence: score,
-            severity: 0.4,
-            recencyScore: item.published_date ? 0.75 : 0.5,
-            risk: score >= 0.8 ? 'Medium' : 'Low',
+            severity: 0,
+            recencyScore: (() => {
+            if (!item.published_date) return 0;
+
+            const published = Date.parse(item.published_date);
+
+            if (!Number.isFinite(published)) return 0;
+            if (published > Date.now()) return 0;
+
+            const ageDays =
+              (Date.now() - published) / 86400000;
+
+            return Math.round(
+              Math.max(0, 1 - ageDays / 365) * 1000
+            ) / 1000;
+          })(),
+            risk: 'Low',
             verificationStatus: 'Unverified',
           });
         }
@@ -153,7 +203,7 @@ export const tavilySearchProvider: OsintProvider = {
       const status = error instanceof ProviderRateLimitError ? 'rate_limited' : 'error';
       const message = error instanceof Error ? error.message : 'Unknown Tavily provider error.';
       recordProviderTelemetry({ providerId: this.id, providerName: this.name, status, error: message });
-      return { ...base, status, findings: [], message, cached: usedCache, latencyMs: Date.now() - started };
+      return { ...base, status, findings, message, cached: usedCache, latencyMs: Date.now() - started };
     }
   },
 };

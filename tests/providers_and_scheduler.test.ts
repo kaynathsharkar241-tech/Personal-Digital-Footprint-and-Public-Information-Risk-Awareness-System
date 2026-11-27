@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { installEmailMock, getDeliveredOTP } from './emailMock.ts';
 import { after, before, describe, it } from 'node:test';
 import {
   apiFetch,
@@ -11,10 +12,12 @@ let baseUrl = '';
 let closeServer: (() => Promise<void>) | null = null;
 let userToken = '';
 let userId = 0;
+let restoreEmailMock: (() => void) | null = null;
 
 describe('OSINT Provider Coverage, Scheduled Worker & Live Free API Tests', () => {
   before(async () => {
     process.env.REVIEWER_PASSCODE = 'SchedulerReviewer#2026';
+    restoreEmailMock = installEmailMock();
     const srv = await startIsolatedServer(false);
     baseUrl = srv.baseUrl;
     closeServer = srv.close;
@@ -37,7 +40,7 @@ describe('OSINT Provider Coverage, Scheduled Worker & Live Free API Tests', () =
     const verify = await apiFetch(baseUrl, '/api/auth/verify-email/confirm', {
       method: 'POST',
       token: userToken,
-      body: { token: reg.data.previewVerificationToken },
+      body: { token: getDeliveredOTP('security-test@gmail.com') },
     });
     assert.equal(verify.status, 200);
 
@@ -62,6 +65,7 @@ describe('OSINT Provider Coverage, Scheduled Worker & Live Free API Tests', () =
 
   after(async () => {
     if (closeServer) await closeServer();
+    restoreEmailMock?.();
     cleanupTestInstance();
   });
 

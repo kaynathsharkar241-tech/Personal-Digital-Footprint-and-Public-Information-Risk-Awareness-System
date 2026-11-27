@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { installEmailMock, getDeliveredOTP } from './emailMock.ts';
+
+let restoreEmailMock: (() => void) | null = null;
 import fs from 'node:fs';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
@@ -18,6 +21,7 @@ describe('Security, Authentication, Encryption, Reviewer & Consent Tests', () =>
   before(async () => {
     const { DB_PATH } = await import('../server/db.ts');
     assert.ok(DB_PATH.startsWith(TEST_INSTANCE_DIR), 'Test must never touch live instance DB');
+    restoreEmailMock = installEmailMock();
     const srv = await startIsolatedServer(false);
     baseUrl = srv.baseUrl;
     closeServer = srv.close;
@@ -25,6 +29,7 @@ describe('Security, Authentication, Encryption, Reviewer & Consent Tests', () =>
 
   after(async () => {
     if (closeServer) await closeServer();
+    restoreEmailMock?.();
     cleanupTestInstance();
   });
 
@@ -79,7 +84,9 @@ describe('Security, Authentication, Encryption, Reviewer & Consent Tests', () =>
     assert.equal(regA.status, 201);
     const tokenA = regA.data.token as string;
     const recoveryCodesA = regA.data.recoveryCodes as string[];
-    const verifyTokenA = regA.data.previewVerificationToken as string;
+    const verifyTokenA = getDeliveredOTP('alice@example.org');
+    assert.match(verifyTokenA, /^\d{6}$/);
+    assert.equal(regA.data.previewVerificationToken, undefined);
     assert.equal(recoveryCodesA.length, 8);
     assert.equal(regA.data.user.aiBiometricConsent, false);
 

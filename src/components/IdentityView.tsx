@@ -97,6 +97,15 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (challengeId && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => {
+        setError('Unable to start camera preview.');
+      });
+    }
+  }, [challengeId]);
+
   const handleStartSequence = async () => {
     setError(null);
     setStatusMsg(null);
@@ -124,6 +133,16 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
 
   const handleRunSequenceCapture = async () => {
     if (!challengeId || !videoRef.current) return;
+
+    if (
+      videoRef.current.readyState < 2 ||
+      !videoRef.current.videoWidth ||
+      !videoRef.current.videoHeight
+    ) {
+      setError('Camera is not ready. Please try again.');
+      return;
+    }
+
     setCapturingSeq(true);
     setError(null);
     const frames: string[] = [];
@@ -140,11 +159,11 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
     try {
       setSeqProgress('Sampling frame 1 of 3 (center)...');
       frames.push(snap());
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 2500));
 
       setSeqProgress('Sampling frame 2 of 3 (turn head slightly)...');
       frames.push(snap());
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 2500));
 
       setSeqProgress('Sampling frame 3 of 3 (return center)...');
       frames.push(snap());
@@ -167,6 +186,9 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
       loadVerificationStatus();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sequence capture failed.');
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      setChallengeId(null);
       setSeqProgress('');
     } finally {
       setCapturingSeq(false);
@@ -285,7 +307,7 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
         {/* Gate 2: Enrollment Selfie & Reviewer Audit */}
         <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold">2. Enrollment Selfie Review</h2>
+            <h2 className="text-base font-semibold">2. Reference Photograph</h2>
             {user.selfieStatus === 'approved' ? (
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
             ) : (
@@ -318,19 +340,16 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
               )}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onOpenReviewer}
-            className="w-full rounded-lg border border-slate-200 dark:border-slate-700 py-2 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
-          >
-            Open Reviewer Audit Console
-          </button>
+          <p className="text-xs text-slate-500">
+              Complete the live camera verification to
+              assess your enrolled photograph.
+            </p>
         </section>
 
         {/* Gate 3: 3-Frame Camera Sequence */}
         <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold">3. Camera Sequence Check</h2>
+            <h2 className="text-base font-semibold">3. Live Camera Verification</h2>
             <Camera className="w-4 h-4 text-slate-400" />
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -354,7 +373,7 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
               onClick={handleStartSequence}
               className="w-full rounded-lg bg-[#15395A] hover:bg-[#102d47] text-white py-2 text-xs font-medium cursor-pointer"
             >
-              Start 3-Frame Sequence Check
+              Start Live Camera
             </button>
           ) : (
             <div className="space-y-3">
@@ -373,7 +392,7 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
                 onClick={handleRunSequenceCapture}
                 className="w-full rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white py-2 text-xs font-medium disabled:opacity-50 cursor-pointer"
               >
-                {capturingSeq ? 'Capturing 3 Frames...' : 'Begin 3-Second Capture'}
+                {capturingSeq ? 'Capturing 3 Frames...' : 'Begin Live Verification'}
               </button>
             </div>
           )}

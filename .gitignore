@@ -36,3 +36,7 @@ __pycache__/
 .DS_Store
 *.log
 dev-dist/
+
+.venv-face/
+__pycache__/
+*.pyc

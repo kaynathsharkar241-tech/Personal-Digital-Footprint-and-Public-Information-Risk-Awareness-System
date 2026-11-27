@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { inspectFace, assessMovement } from './faceEngine.ts';
 import {
   generateEmailOTP,
   hashEmailOTP,
@@ -1589,7 +1590,7 @@ try {
       challengeId,
       expiresInSeconds: 90,
       instructions:
-        'Look at the camera, turn your head gently to one side, then return to center. Three frames will be sampled over 3 seconds.',
+        'Look directly at the camera for the first frame. Turn your head gently for the second frame, then return to center for the third frame.',
       notice:
         'This prototype sequence check verifies frame timing and visual screening for trusted review; it does not establish certified biometric liveness alone.',
     });
@@ -1644,6 +1645,28 @@ try {
       return;
     }
 
+    for (let i = 0; i < parsedFrames.length; i++) {
+      const assessment = await inspectFace(parsedFrames[i].buffer);
+
+      if (assessment.status !== 'passed') {
+        res.status(422).json({
+          error: `Camera frame ${i + 1}: ${assessment.reason}`
+        });
+        return;
+      }
+    }
+
+    const movementAssessment = await assessMovement(
+      parsedFrames.map(f => f.buffer)
+    );
+
+    if (movementAssessment.status !== 'passed') {
+      res.status(422).json({
+        error: movementAssessment.reason
+      });
+      return;
+    }
+
     const hashes = parsedFrames.map((f) => sha256Hex(f.buffer));
     const uniqueCount = new Set(hashes).size;
 
@@ -1666,37 +1689,14 @@ try {
       return;
     }
 
-    let status: 'review_required' | 'failed' = uniqueCount >= 2 ? 'review_required' : 'failed';
-    let confidence: number | null = null;
-    let message =
-      uniqueCount < 2
-        ? 'Insufficient frame variation across the 3 sampled frames.'
-        : enrolled.ai_biometric_consent === 1
-        ? 'Sequence recorded for trusted review. Real-time liveness requires reviewer audit.'
-        : 'Sequence recorded locally and queued for manual reviewer inspection (optional third-party Google Gemini biometric screening is disabled).';
+    const status: 'review_required' | 'failed' =
+      uniqueCount === 3 ? 'review_required' : 'failed';
 
-    if (uniqueCount >= 2 && enrolled.ai_biometric_consent === 1) {
-      try {
-        const refBuf = decryptBuffer(enrolled.encrypted_selfie, enrolled.iv, enrolled.auth_tag);
-        const aiRes = await screenFaceSimilarityWithAI(
-          refBuf.toString('base64'),
-          enrolled.mime,
-          parsedFrames[1].buffer.toString('base64'),
-          parsedFrames[1].mime
-        );
-        confidence = typeof aiRes.confidence === 'number' ? aiRes.confidence : null;
-        if (aiRes.result === 'no_match') {
-          status = 'failed';
-          message = `Visual screening did not match enrollment selfie: ${aiRes.reason}`;
-        } else {
-          status = 'review_required';
-          message = `Visual screening (${aiRes.result}): ${aiRes.reason}. Queued for trusted reviewer sign-off.`;
-        }
-      } catch {
-        status = 'review_required';
-        message = 'Sequence frames captured and queued for trusted reviewer inspection.';
-      }
-    }
+    const confidence: number | null = null;
+
+    const message = uniqueCount === 3
+      ? 'Local image quality and head movement checks passed. Identity verification remains incomplete.'
+      : 'Insufficient variation across camera frames. Please retry.';
 
     db.prepare(
       `INSERT INTO liveness_sessions
