@@ -30,7 +30,7 @@ export function securityHeadersMiddleware(isProd: boolean) {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob:",
-      "connect-src 'self'",
+      "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com",
       "frame-ancestors 'self' https://aistudio.google.com https://*.google.com https://*.googleusercontent.com",
       "object-src 'none'",
       "base-uri 'self'",
