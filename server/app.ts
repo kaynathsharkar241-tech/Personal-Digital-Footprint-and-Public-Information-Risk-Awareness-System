@@ -1,4 +1,11 @@
 import crypto from 'node:crypto';
+import {
+  generateEmailOTP,
+  hashEmailOTP,
+  getOTPExpiry,
+  isEmailConfigured,
+  sendVerificationEmail,
+} from './email.ts';
 import type http from 'node:http';
 import path from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
@@ -430,7 +437,7 @@ export async function createApp(options?: {
 
   const emailConfirmLimiter = createRateLimitMiddleware({
     prefix: 'email_confirm',
-    maxAttempts: 10,
+    maxAttempts: 5,
     windowMs: 15 * 60 * 1000,
     lockDurationMs: 15 * 60 * 1000,
     keyFn: (req) => String((req as AuthedRequest).userId || getClientIp(req)),
@@ -552,7 +559,7 @@ export async function createApp(options?: {
   });
 
   // --- Auth & Registration ---
-  app.post('/api/auth/register', registerIpLimiter, (req, res) => {
+  app.post('/api/auth/register', registerIpLimiter, async (req, res) => {
     try {
       const name = String(req.body?.fullName || '').trim().slice(0, 120);
       const email = String(req.body?.email || '').trim().toLowerCase().slice(0, 254);
@@ -628,11 +635,24 @@ export async function createApp(options?: {
         insertCode.run(userId, c.hash, now);
       }
 
-      const emailTok = generateToken(24);
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
-      db.prepare(
-        'INSERT INTO email_tokens (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)'
-      ).run(userId, emailTok.hash, expiresAt, now);
+      let emailSent = false;
+
+      if (isEmailConfigured()) {
+        const otp = generateEmailOTP();
+        const otpHash = hashEmailOTP(userId, otp, SESSION_SIGNING_SECRET);
+
+        db.prepare(
+          'INSERT INTO email_tokens (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)'
+        ).run(userId, otpHash, getOTPExpiry(), now);
+
+        try {
+          await sendVerificationEmail(email, otp);
+          emailSent = true;
+        } catch {
+          db.prepare('DELETE FROM email_tokens WHERE user_id = ? AND token_hash = ?')
+            .run(userId, otpHash);
+        }
+      }
 
       db.prepare('INSERT INTO notifications (user_id, body, created_at) VALUES (?, ?, ?)').run(
         userId,
@@ -647,8 +667,8 @@ export async function createApp(options?: {
         token: sessionToken,
         user: userState,
         recoveryCodes: recoveryCodes.map((c) => c.plain),
-        previewVerificationToken: !process.env.SMTP_HOST ? emailTok.raw : null,
-        smtpConfigured: Boolean(process.env.SMTP_HOST?.trim() && process.env.MAIL_FROM?.trim()),
+        emailSent,
+        emailConfigured: isEmailConfigured(),
       });
     } catch (err) {
       res.status(400).json({ error: err instanceof Error ? err.message : 'Registration failed.' });
@@ -1410,7 +1430,7 @@ try {
     }
   );
 
-  app.post('/api/auth/verify-email/resend', requireAuth, emailResendLimiter, (req: AuthedRequest, res) => {
+  app.post('/api/auth/verify-email/resend', requireAuth, emailResendLimiter, async (req: AuthedRequest, res) => {
     const user = getEnrollmentState(req.userId!);
     if (!user) {
       res.status(401).json({ error: 'Account not found.' });
@@ -1437,25 +1457,39 @@ try {
       }
     }
 
+    if (!isEmailConfigured()) {
+      res.status(503).json({ error: 'Email delivery is not configured.' });
+      return;
+    }
+
     const now = utcNow();
-    db.prepare('DELETE FROM email_tokens WHERE user_id = ?').run(req.userId!);
-    const tok = generateToken(24);
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+    const userId = req.userId!;
+    const otp = generateEmailOTP();
+    const otpHash = hashEmailOTP(userId, otp, SESSION_SIGNING_SECRET);
+
+    db.prepare('DELETE FROM email_tokens WHERE user_id = ?').run(userId);
+
     db.prepare(
       'INSERT INTO email_tokens (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)'
-    ).run(req.userId!, tok.hash, expiresAt, now);
+    ).run(userId, otpHash, getOTPExpiry(), now);
 
-    res.json({
-      sent: true,
-      previewVerificationToken: !process.env.SMTP_HOST ? tok.raw : null,
-      smtpConfigured: Boolean(process.env.SMTP_HOST?.trim() && process.env.MAIL_FROM?.trim()),
-    });
+    try {
+      await sendVerificationEmail(req.userEmail!, otp);
+      res.json({ sent: true });
+    } catch {
+      db.prepare('DELETE FROM email_tokens WHERE user_id = ? AND token_hash = ?')
+        .run(userId, otpHash);
+
+      res.status(503).json({
+        error: 'Unable to send verification email. Please try again later.'
+      });
+    }
   });
 
   app.post('/api/auth/verify-email/confirm', requireAuth, emailConfirmLimiter, (req: AuthedRequest, res) => {
     const token = String(req.body?.token || '').trim();
-    if (!token) {
-      res.status(400).json({ error: 'Verification token is required.' });
+    if (!/^\d{6}$/.test(token)) {
+      res.status(400).json({ error: 'Enter a valid six-digit verification code.' });
       return;
     }
     const now = utcNow();
@@ -1463,7 +1497,7 @@ try {
       .prepare(
         'SELECT id, user_id, expires_at, used_at FROM email_tokens WHERE token_hash = ? AND user_id = ?'
       )
-      .get(sha256Hex(token), req.userId!) as
+      .get(hashEmailOTP(req.userId!, token, SESSION_SIGNING_SECRET), req.userId!) as
       | { id: number; user_id: number; expires_at: string; used_at: string | null }
       | undefined;
 

@@ -54,3 +54,20 @@ export async function sendVerificationEmail(
     );
   }
 }
+
+export function hashEmailOTP(
+  userId: number,
+  otp: string,
+  secret: string | Buffer
+): string {
+  return crypto
+    .createHmac('sha256', secret)
+    .update(`email-otp:${userId}:${otp}`)
+    .digest('hex');
+}
+
+export function getOTPExpiry(): string {
+  return new Date(Date.now() + 5 * 60 * 1000)
+    .toISOString()
+    .replace(/\.\d{3}Z$/, 'Z');
+}

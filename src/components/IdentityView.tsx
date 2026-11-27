@@ -17,8 +17,8 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
   onUserUpdated,
   onOpenReviewer,
 }) => {
-  const [tokenInput, setTokenInput] = useState(previewVerifyToken || '');
-  const [devToken, setDevToken] = useState<string | null>(previewVerifyToken);
+  const [tokenInput, setTokenInput] = useState('');
+
   const [pinInput, setPinInput] = useState('');
   const [passkeyLabel, setPasskeyLabel] = useState('My Device Passkey');
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -72,10 +72,6 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
       }>('/api/auth/verify-email/resend', { method: 'POST' });
       if (res.alreadyVerified) {
         setStatusMsg('Email is already verified.');
-      } else if (res.previewVerificationToken) {
-        setDevToken(res.previewVerificationToken);
-        setTokenInput(res.previewVerificationToken);
-        setStatusMsg('Verification token generated (SMTP is unconfigured in preview; single-use token shown below).');
       } else {
         setStatusMsg('Verification email sent. Check your inbox.');
       }
@@ -94,7 +90,6 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
         body: JSON.stringify({ token: tokenInput }),
       });
       onUserUpdated(res.user);
-      setDevToken(null);
       setTokenInput('');
       setStatusMsg('Email ownership verified.');
     } catch (err) {
@@ -255,17 +250,17 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
           </p>
           {!user.emailVerified && (
             <form onSubmit={handleConfirmEmail} className="space-y-3">
-              {devToken && (
-                <div className="rounded-lg bg-slate-100 dark:bg-slate-800 p-2.5 text-xs">
-                  <div className="text-slate-500 dark:text-slate-400">Preview single-use token:</div>
-                  <div className="font-mono break-all select-all mt-1">{devToken}</div>
-                </div>
-              )}
+              
               <input
                 type="text"
                 value={tokenInput}
-                onChange={(e) => setTokenInput(e.target.value)}
-                placeholder="Paste verification token"
+                onChange={(e) => setTokenInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                placeholder="Enter six-digit code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                pattern="[0-9]{6}"
+                required
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-xs font-mono"
               />
               <div className="flex items-center gap-2">
@@ -273,14 +268,14 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
                   type="submit"
                   className="px-3.5 py-2 rounded-lg bg-[#15395A] text-white text-xs font-medium cursor-pointer"
                 >
-                  Confirm Token
+                  Verify Email
                 </button>
                 <button
                   type="button"
                   onClick={handleResendEmail}
                   className="px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium cursor-pointer"
                 >
-                  Issue New Token
+                  Send Code
                 </button>
               </div>
             </form>
