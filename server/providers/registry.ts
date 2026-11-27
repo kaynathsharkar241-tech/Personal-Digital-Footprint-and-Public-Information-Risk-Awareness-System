@@ -142,7 +142,16 @@ export async function runOsintScan(ctx: ScanContext): Promise<{
     const res = settled[i];
     if (res.status === 'fulfilled') {
       providerResults.push(res.value);
-      findings.push(...res.value.findings);
+      // General cybersecurity intelligence is retained in
+      // provider results but excluded from personal exposures.
+      const contextualProviders = new Set([
+        'nvd_cve',
+        'cisa_kev'
+      ]);
+
+      if (!contextualProviders.has(p.id)) {
+        findings.push(...res.value.findings);
+      }
     } else {
       providerResults.push({
         providerId: p.id,

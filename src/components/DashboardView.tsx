@@ -399,7 +399,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               <div>
                 <div className="flex justify-between text-xs font-medium mb-1">
-                  <span>Platform / Risk Severity</span>
+                  <span>Exposure Severity Weight</span>
                   <span className="font-mono tabular-nums">
                     {weights.severity_weight.toFixed(2)}
                   </span>
@@ -419,7 +419,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               <div>
                 <div className="flex justify-between text-xs font-medium mb-1">
-                  <span>Recency</span>
+                  <span>Recency Weight</span>
                   <span className="font-mono tabular-nums">
                     {weights.recency_weight.toFixed(2)}
                   </span>

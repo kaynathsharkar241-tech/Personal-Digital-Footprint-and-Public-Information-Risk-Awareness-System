@@ -157,7 +157,18 @@ export async function executeScanForUser(
 
   for (const f of scanOutcome.findings) {
     const sig = sha256Hex(`${f.sourceName}|${f.category}|${f.sourceUrl}|${f.title}`);
-    const priority = computePriority(f.confidence, f.severity, f.recencyScore, weights);
+    // Unverified matches must not be treated as
+    // confirmed personal privacy exposures.
+    const isVerified = f.verificationStatus === 'Verified Match';
+
+    const priority = isVerified
+      ? computePriority(
+          f.confidence,
+          f.severity,
+          f.recencyScore,
+          weights
+        )
+      : 0;
     const r = insertStmt.run(
       userId,
       scanId,

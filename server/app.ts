@@ -2245,20 +2245,23 @@ try {
     ).run(req.userId!, normC, normS, normR, now);
 
     const rows = db
-      .prepare('SELECT id, confidence, severity, recency_score FROM findings WHERE user_id = ?')
+      .prepare('SELECT id, confidence, severity, recency_score, verification_status FROM findings WHERE user_id = ?')
       .all(req.userId!) as Array<{
       id: number;
       confidence: number;
       severity: number;
       recency_score: number;
+      verification_status: string;
     }>;
     const upd = db.prepare('UPDATE findings SET priority = ? WHERE id = ? AND user_id = ?');
     for (const f of rows) {
-      const p = computePriority(f.confidence, f.severity, f.recency_score, {
-        confidence_weight: normC,
-        severity_weight: normS,
-        recency_weight: normR,
-      });
+      const p = f.verification_status === 'Verified Match'
+        ? computePriority(f.confidence, f.severity, f.recency_score, {
+            confidence_weight: normC,
+            severity_weight: normS,
+            recency_weight: normR,
+          })
+        : 0;
       upd.run(p, f.id, req.userId!);
     }
 
@@ -2490,7 +2493,7 @@ try {
       'SELECT id, verification_status FROM findings WHERE id = ? AND user_id = ?'
     );
     const updStmt = db.prepare(
-      'UPDATE findings SET verification_status = ?, user_verified = ?, review_note = ?, reviewed_at = ? WHERE id = ? AND user_id = ?'
+      `UPDATE findings SET           verification_status = ?1,           user_verified = ?2,           review_note = ?3,           reviewed_at = ?4,           priority = CASE             WHEN ?1 = 'Verified Match' THEN ROUND(               confidence * COALESCE(                 (SELECT confidence_weight FROM priority_weights                  WHERE user_id = findings.user_id), 0.45               ) +               severity * COALESCE(                 (SELECT severity_weight FROM priority_weights                  WHERE user_id = findings.user_id), 0.35               ) +               recency_score * COALESCE(                 (SELECT recency_weight FROM priority_weights                  WHERE user_id = findings.user_id), 0.20               ), 3             )             ELSE 0           END           WHERE id = ?5 AND user_id = ?6`
     );
     const evtStmt = db.prepare(
       `INSERT INTO finding_review_events (finding_id, user_id, previous_status, new_status, note, reviewed_at)
@@ -2556,7 +2559,7 @@ try {
     db.exec('BEGIN;');
     try {
       db.prepare(
-        'UPDATE findings SET verification_status = ?, user_verified = ?, review_note = ?, reviewed_at = ? WHERE id = ? AND user_id = ?'
+        `UPDATE findings SET           verification_status = ?1,           user_verified = ?2,           review_note = ?3,           reviewed_at = ?4,           priority = CASE             WHEN ?1 = 'Verified Match' THEN ROUND(               confidence * COALESCE(                 (SELECT confidence_weight FROM priority_weights                  WHERE user_id = findings.user_id), 0.45               ) +               severity * COALESCE(                 (SELECT severity_weight FROM priority_weights                  WHERE user_id = findings.user_id), 0.35               ) +               recency_score * COALESCE(                 (SELECT recency_weight FROM priority_weights                  WHERE user_id = findings.user_id), 0.20               ), 3             )             ELSE 0           END           WHERE id = ?5 AND user_id = ?6`
       ).run(verificationStatus, verifiedBit, nextNote, now, findingId, req.userId!);
       db.prepare(
         `INSERT INTO finding_review_events (finding_id, user_id, previous_status, new_status, note, reviewed_at)
