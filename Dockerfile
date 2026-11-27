@@ -10,7 +10,7 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       libglib2.0-0 libgomp1 libstdc++6 ca-certificates \
+       libglib2.0-0 libgomp1 libstdc++6 libatomic1 ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
