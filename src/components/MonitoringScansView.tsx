@@ -13,6 +13,7 @@ import {
   Search,
   Sparkles,
 } from 'lucide-react';
+import { getFindingPresentation, formatFindingPriority, formatFindingRisk } from '../utils/findingPresentation.ts';
 import { apiRequest } from '../lib/api.ts';
 import type {
   Finding,
@@ -324,7 +325,7 @@ export const MonitoringScansView: React.FC<MonitoringScansViewProps> = ({
       const status = f.verification_status || (f.user_verified ? 'Verified Match' : 'Unverified');
       if (statusTab !== 'All' && status !== statusTab) return false;
       if (categoryFilter !== 'All' && f.category !== categoryFilter) return false;
-      if (riskFilter !== 'All' && f.risk !== riskFilter) return false;
+      if (riskFilter !== 'All' && formatFindingRisk(f.risk, status) !== riskFilter) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
         return (
@@ -764,10 +765,13 @@ export const MonitoringScansView: React.FC<MonitoringScansViewProps> = ({
             onChange={(e) => setRiskFilter(e.target.value)}
             className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-xs"
           >
-            <option value="All">All Risk Levels</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
+            <option value="All">All Assessment Labels</option>
+            <option value="High (heuristic)">High (heuristic)</option>
+            <option value="Medium (heuristic)">Medium (heuristic)</option>
+            <option value="Low (heuristic)">Low (heuristic)</option>
+            <option value="Not assessed">Not assessed</option>
+            <option value="Excluded">Excluded</option>
+            <option value="Unavailable">Unavailable</option>
           </select>
         </div>
 
@@ -833,16 +837,8 @@ export const MonitoringScansView: React.FC<MonitoringScansViewProps> = ({
                           onChange={() => toggleSelectFinding(f.id)}
                           className="rounded border-slate-300"
                         />
-                        <span
-                          className={`font-semibold ${
-                            f.risk === 'High'
-                              ? 'text-red-600 dark:text-red-400'
-                              : f.risk === 'Medium'
-                              ? 'text-amber-600 dark:text-amber-400'
-                              : 'text-emerald-700 dark:text-emerald-400'
-                          }`}
-                        >
-                          {f.risk} Severity
+                        <span className="font-semibold text-slate-600 dark:text-slate-300">
+                          Risk: {formatFindingRisk(f.risk, currentVerification)}
                         </span>
                         <span aria-hidden="true" className="text-slate-300">
                           ·
@@ -854,13 +850,7 @@ export const MonitoringScansView: React.FC<MonitoringScansViewProps> = ({
                           ·
                         </span>
                         <span className="font-mono tabular-nums text-slate-500">
-                          Confidence {Math.round(f.confidence * 100)}%
-                        </span>
-                        <span aria-hidden="true" className="text-slate-300">
-                          ·
-                        </span>
-                        <span className="font-mono tabular-nums text-slate-500">
-                          Priority {f.priority.toFixed(2)}
+                          Priority: {formatFindingPriority(f.priority, currentVerification)}
                         </span>
                         <span aria-hidden="true" className="text-slate-300">
                           ·
@@ -874,7 +864,7 @@ export const MonitoringScansView: React.FC<MonitoringScansViewProps> = ({
                               : 'text-amber-600 dark:text-amber-400'
                           }`}
                         >
-                          {currentVerification}
+                          {getFindingPresentation(currentVerification).label}
                         </span>
                       </div>
 
@@ -960,7 +950,7 @@ export const MonitoringScansView: React.FC<MonitoringScansViewProps> = ({
                           onCreateCaseFromFinding({
                             title: f.title.slice(0, 140),
                             category: f.category,
-                            description: `${f.explanation}\n\nSource: ${f.source_name || 'OSINT'} (${f.found_at})\nEvidence: ${f.evidence || 'See source URL'}\nConfidence: ${Math.round(f.confidence * 100)}% | Priority: ${f.priority.toFixed(2)}`,
+                            description: `${f.explanation}\n\nSource: ${f.source_name || 'OSINT'} (${f.found_at})\nEvidence: ${f.evidence || 'See source URL'}\nStatus: ${getFindingPresentation(currentVerification).label} | Risk: ${formatFindingRisk(f.risk, currentVerification)} | Priority: ${formatFindingPriority(f.priority, currentVerification)}`,
                             url: f.source.startsWith('http') ? f.source : '',
                           })
                         }

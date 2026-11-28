@@ -28,6 +28,9 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [localBiometricConsent, setLocalBiometricConsent] =
+    useState(false);
+
   const [instructions, setInstructions] = useState<string>('');
   const [capturingSeq, setCapturingSeq] = useState(false);
   const [seqProgress, setSeqProgress] = useState<string>('');
@@ -107,6 +110,11 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
   }, [challengeId]);
 
   const handleStartSequence = async () => {
+    if (!localBiometricConsent) {
+      setError('Please consent to local facial comparison first.');
+      return;
+    }
+
     setError(null);
     setStatusMsg(null);
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -132,6 +140,11 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
   };
 
   const handleRunSequenceCapture = async () => {
+    if (!localBiometricConsent) {
+      setError('Local biometric consent is required.');
+      return;
+    }
+
     if (!challengeId || !videoRef.current) return;
 
     if (
@@ -157,26 +170,47 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
     };
 
     try {
-      setSeqProgress('Sampling frame 1 of 3 (center)...');
-      frames.push(snap());
-      await new Promise((r) => setTimeout(r, 2500));
+      const captureAfterCountdown = async (
+        instruction: string
+      ) => {
+        for (let seconds = 3; seconds > 0; seconds--) {
+          setSeqProgress(
+            `${instruction} — ${seconds}`
+          );
 
-      setSeqProgress('Sampling frame 2 of 3 (turn head slightly)...');
-      frames.push(snap());
-      await new Promise((r) => setTimeout(r, 2500));
+          await new Promise(
+            resolve => setTimeout(resolve, 1000)
+          );
+        }
 
-      setSeqProgress('Sampling frame 3 of 3 (return center)...');
-      frames.push(snap());
+        frames.push(snap());
+      };
+
+      await captureAfterCountdown(
+        'Frame 1 of 3: Look straight at the camera'
+      );
+
+      await captureAfterCountdown(
+        'Frame 2 of 3: Turn your head slightly'
+      );
+
+      await captureAfterCountdown(
+        'Frame 3 of 3: Return to center'
+      );
 
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
 
-      setSeqProgress('Submitting sequence for visual screening...');
+      setSeqProgress('Processing facial comparison...');
       const res = await apiRequest<{ message: string; user: UserState }>(
         '/api/liveness/challenge/finish',
         {
           method: 'POST',
-          body: JSON.stringify({ challengeId, frames }),
+          body: JSON.stringify({
+            challengeId,
+            frames,
+            localBiometricConsent
+          }),
         }
       );
       setChallengeId(null);
@@ -272,7 +306,7 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
           </p>
           {!user.emailVerified && (
             <form onSubmit={handleConfirmEmail} className="space-y-3">
-              
+
               <input
                 type="text"
                 value={tokenInput}
@@ -367,7 +401,31 @@ export const IdentityView: React.FC<IdentityViewProps> = ({
               <strong>{user.aiBiometricConsent ? 'enabled' : 'disabled'}</strong>).
             </span>
           </label>
-          {!challengeId ? (
+
+          <label className="flex items-start gap-3
+            rounded-xl border border-slate-200 p-3
+            text-sm dark:border-slate-700">
+
+            <input
+              type="checkbox"
+              checked={localBiometricConsent}
+              disabled={Boolean(challengeId)}
+              onChange={(e) =>
+                setLocalBiometricConsent(e.target.checked)
+              }
+              className="mt-1"
+            />
+
+            <span>
+              I consent to comparing my enrolled selfie
+              with my camera images using the
+              server-side facial comparison engine.
+              My images will not be sent to an external
+              AI provider for this comparison.
+            </span>
+          </label>
+
+{!challengeId ? (
             <button
               type="button"
               onClick={handleStartSequence}

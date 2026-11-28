@@ -1,3 +1,4 @@
+import { evaluateRelevance } from './relevance.ts';
 import { utcNow } from '../db.ts';
 import {
   ProviderRateLimitError,
@@ -78,22 +79,6 @@ export const tavilySearchProvider: OsintProvider = {
     }
 
     const findings: NormalizedFinding[] = [];
-    const normalizeText = (value: string) =>
-      value.normalize('NFKC')
-        .toLowerCase()
-        .replace(/\s+/g, ' ')
-        .trim();
-
-    const identifiers = [
-      ctx.fullName,
-      ctx.username.replace(/^@/, ''),
-      ...ctx.terms,
-      ...ctx.domains
-    ]
-      .map(normalizeText)
-      .filter(value => value.length >= 3);
-
-
     const seenUrls = new Set<string>();
     let usedCache = false;
     try {
@@ -143,28 +128,86 @@ export const tavilySearchProvider: OsintProvider = {
         for (const item of (payload.results ?? [])) {
           const url = String(item.url || '');
           if (!/^https?:\/\//i.test(url)) continue;
-          const normalizedUrl = new URL(url);
+          let normalizedUrl: URL;
+
+          try {
+            normalizedUrl = new URL(url);
+          } catch {
+            continue;
+          }
+
           normalizedUrl.hash = '';
 
           const canonicalUrl = normalizedUrl.toString();
 
           if (seenUrls.has(canonicalUrl)) continue;
-          seenUrls.add(canonicalUrl);
+
 
           const title = String(item.title || url).slice(0, 240);
           const content = String(item.content || '').slice(0, 700);
 
-          const searchable = normalizeText(
-            `${title} ${String(item.content || '')} ${url}`
+          const match = evaluateRelevance(
+            title,
+            content,
+            url,
+            {
+              fullName: ctx.fullName,
+              username: ctx.username.replace(/^@/, '')
+            }
           );
 
-          const matchedIdentifiers = identifiers.filter(
-            identifier => searchable.includes(identifier)
+          const matchedTypes = new Set(
+            match.matchedIdentifiers
           );
 
-          if (matchedIdentifiers.length === 0) continue;
+          for (const term of ctx.terms) {
+            const clean = term.trim();
 
-          const score = Number.isFinite(Number(item.score)) ? Math.max(0, Math.min(1, Number(item.score))) : 0.45;
+            const result = evaluateRelevance(
+              title, content, url,
+              clean.includes('@')
+                ? { email: clean }
+                : { fullName: clean }
+            );
+
+            if (result.relevance !== 'none') {
+              matchedTypes.add('additional monitored term');
+            }
+          }
+
+          for (const domain of ctx.domains) {
+            const clean = domain.trim()
+              .replace(/^https?:\/\//i, '')
+              .replace(/\/$/, '');
+
+            const result = evaluateRelevance(
+              title, content, url,
+              { domain: clean }
+            );
+
+            if (result.relevance !== 'none') {
+              matchedTypes.add('domain');
+            }
+          }
+
+          if (matchedTypes.size === 0) continue;
+
+          seenUrls.add(canonicalUrl);
+
+          const score =
+            typeof item.score === 'number' &&
+            Number.isFinite(item.score) &&
+            item.score >= 0 &&
+            item.score <= 1
+              ? item.score
+              : 0;
+
+          const evidenceLabels = [...matchedTypes]
+            .map(type => type === 'fullName'
+              ? 'full name'
+              : type)
+            .join(', ');
+
           findings.push({
             title: `Public web result: ${title}`,
             category: categoryForUrl(url),
@@ -172,7 +215,7 @@ export const tavilySearchProvider: OsintProvider = {
             sourceUrl: url,
             foundAt: retrievedAt,
             evidence: content || `Tavily returned this public URL for query: ${query}`,
-            explanation: 'A monitored identifier appears in this indexed result. Search relevance does not establish identity, harmful exposure, or privacy risk. Review the original source before confirming this finding.',
+            explanation: `Detected identifiers: ${evidenceLabels}. Search relevance does not establish identity or harmful exposure. The provider score measures search relevance, not identity confidence. Review the original source before confirming this finding.`,
             confidence: score,
             severity: 0,
             recencyScore: (() => {

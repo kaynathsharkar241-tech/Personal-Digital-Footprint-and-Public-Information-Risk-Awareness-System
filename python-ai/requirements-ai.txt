@@ -1,0 +1,4 @@
+# Optional only. Install in a dedicated virtual environment; TensorFlow/DeepFace
+# can be large and may require platform-specific hardware/runtime support.
+Pillow>=10,<13
+deepface>=0.0.93,<0.1

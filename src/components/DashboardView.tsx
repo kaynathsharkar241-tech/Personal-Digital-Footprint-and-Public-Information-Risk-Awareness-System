@@ -234,32 +234,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="mt-2 font-mono text-3xl font-semibold tabular-nums text-slate-900 dark:text-white">
             {data.totalFindings}
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs tabular-nums">
-            <span className="text-red-600 dark:text-red-400 font-medium">
-              {data.riskCounts.High} High
-            </span>
-            <span aria-hidden="true" className="text-slate-300">
-              ·
-            </span>
-            <span className="text-amber-600 dark:text-amber-400 font-medium">
-              {data.riskCounts.Medium} Medium
-            </span>
-            <span aria-hidden="true" className="text-slate-300">
-              ·
-            </span>
-            <span className="text-slate-600 dark:text-slate-400">
-              {data.riskCounts.Low} Low
-            </span>
-          </div>
-          {data.reviewCounts && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
-              <span>{data.reviewCounts.unverified} queued</span>
-              <span aria-hidden="true">·</span>
+          {data.reviewCounts ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-400 tabular-nums">
+              <span>{data.reviewCounts.unverified} potential</span>
               <span>{data.reviewCounts.verifiedMatch} verified</span>
-              <span aria-hidden="true">·</span>
-              <span>{data.reviewCounts.safeLibrary} safe</span>
+              <span>{data.reviewCounts.safeLibrary} false positives</span>
             </div>
+          ) : (
+            <p className="mt-2 text-xs text-slate-500">Review counts unavailable.</p>
           )}
+          <p className="mt-1 text-xs text-slate-500">A match does not establish privacy harm.</p>
         </div>
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
@@ -373,13 +357,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               Rule-Based Priority Weights
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Adjust how match confidence, site severity, and recency rank findings (sum must equal 1.00).
+              Adjust heuristic ranking weights for verified matches (sum must equal 1.00). These are not calibrated probabilities of harm.
             </p>
 
             <div className="mt-5 space-y-4">
               <div>
                 <div className="flex justify-between text-xs font-medium mb-1">
-                  <span>Identity Match Confidence</span>
+                  <span>Provider Evidence Weight</span>
                   <span className="font-mono tabular-nums">
                     {weights.confidence_weight.toFixed(2)}
                   </span>

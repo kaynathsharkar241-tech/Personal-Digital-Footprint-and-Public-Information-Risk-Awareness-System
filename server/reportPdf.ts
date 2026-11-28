@@ -1,3 +1,4 @@
+import { formatFindingPriority, formatFindingRisk } from '../src/utils/findingPresentation.ts';
 /**
  * Pure TypeScript PDF 1.4 Report Generator (zero external native binaries or paid services).
  * Produces compliant multi-page PDF documents with standard Helvetica / Courier Type1 fonts.
@@ -296,16 +297,12 @@ export function buildAccountReportPdf(params: {
     params.exposureScore === null ? 'Not assessed yet' : `${params.exposureScore} / 100`
   );
 
-  const activeFindings = params.findings.filter((f) => f.verification_status !== 'False Positive');
   const verifiedMatches = params.findings.filter((f) => f.verification_status === 'Verified Match');
   const safeLibrary = params.findings.filter((f) => f.verification_status === 'False Positive');
-  const highRisk = activeFindings.filter((f) => f.risk === 'High').length;
-  const medRisk = activeFindings.filter((f) => f.risk === 'Medium').length;
-  const lowRisk = activeFindings.filter((f) => f.risk === 'Low').length;
 
   doc.addKeyValue(
     'Findings Overview',
-    `${params.findings.length} total | ${verifiedMatches.length} Verified Match | ${safeLibrary.length} Safe Library (False Positive) | Active Severity: ${highRisk} High, ${medRisk} Medium, ${lowRisk} Low`
+    `${params.findings.length} total | ${verifiedMatches.length} Verified Match | ${safeLibrary.length} False Positive | ${params.findings.length - verifiedMatches.length - safeLibrary.length} Potential Match`
   );
 
   const resolvedCases = params.cases.filter((c) => c.status === 'Resolved').length;
@@ -321,9 +318,7 @@ export function buildAccountReportPdf(params: {
     for (const f of params.findings) {
       doc.addParagraph(`[#${f.id}] ${f.title}`, { font: 'F2', size: 10, color: '0.06 0.09 0.16' });
       doc.addParagraph(
-        `Category: ${f.category} | Severity: ${f.risk} | Status: ${f.verification_status} | Confidence: ${Math.round(
-          f.confidence * 100
-        )}% | Priority: ${f.priority.toFixed(2)}`,
+        `Category: ${f.category} | Risk: ${formatFindingRisk(f.risk, f.verification_status)} | Status: ${f.verification_status} | Priority: ${formatFindingPriority(f.priority, f.verification_status)}`,
         { size: 8.5, indent: 8, color: '0.28 0.33 0.41' }
       );
       doc.addParagraph(`Source: ${f.source_name || 'External OSINT'} | URL: ${f.source}`, {

@@ -71,6 +71,7 @@ function collectFiles(rootDir: string, relBase: string, out: string[]): void {
     }
   } else if (stat.isFile()) {
     const cleanRel = relBase.replace(/\\/g, '/');
+    if (/\.py$/i.test(cleanRel)) return;
     if (isForbiddenArchivePath(cleanRel)) {
       throw new Error(`Refusing to package sensitive/excluded file: ${cleanRel}`);
     }

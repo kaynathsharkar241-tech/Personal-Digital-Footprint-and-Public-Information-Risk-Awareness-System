@@ -1,3 +1,4 @@
+import { compareEnrolledFace } from './faceMatcher.ts';
 import crypto from 'node:crypto';
 import { inspectFace, assessMovement } from './faceEngine.ts';
 import {
@@ -1645,6 +1646,16 @@ try {
       return;
     }
 
+    const hashes = parsedFrames.map(f => sha256Hex(f.buffer));
+    const uniqueCount = new Set(hashes).size;
+
+    if (uniqueCount !== 3) {
+      res.status(422).json({
+        error: 'Duplicate camera frames detected. Please retry.'
+      });
+      return;
+    }
+
     for (let i = 0; i < parsedFrames.length; i++) {
       const assessment = await inspectFace(parsedFrames[i].buffer);
 
@@ -1667,8 +1678,7 @@ try {
       return;
     }
 
-    const hashes = parsedFrames.map((f) => sha256Hex(f.buffer));
-    const uniqueCount = new Set(hashes).size;
+
 
     const enrolled = db
       .prepare(
@@ -1689,22 +1699,64 @@ try {
       return;
     }
 
-    const status: 'review_required' | 'failed' =
-      uniqueCount === 3 ? 'review_required' : 'failed';
+    if (req.body?.localBiometricConsent !== true) {
+      res.status(400).json({
+        error: 'Explicit local biometric comparison consent is required.'
+      });
+      return;
+    }
 
+    let reference: Buffer;
+
+    try {
+      reference = decryptBuffer(
+        enrolled.encrypted_selfie,
+        enrolled.iv,
+        enrolled.auth_tag
+      );
+    } catch {
+      res.status(500).json({
+        error: 'Enrollment image could not be decrypted.'
+      });
+      return;
+    }
+
+    const similarities: number[] = [];
+
+    try {
+      for (const frame of parsedFrames) {
+        const result = await compareEnrolledFace(
+          reference.toString('base64'),
+          frame.buffer.toString('base64')
+        );
+
+        if (result.status !== 'compared') {
+          res.status(422).json({
+            error: 'Facial comparison could not be completed.'
+          });
+          return;
+        }
+
+        similarities.push(result.cosineSimilarity);
+      }
+    } finally {
+      reference.fill(0);
+    }
+
+    const status = 'review_required';
     const confidence: number | null = null;
 
-    const message = uniqueCount === 3
-      ? 'Local image quality and head movement checks passed. Identity verification remains incomplete.'
-      : 'Insufficient variation across camera frames. Please retry.';
+    const message =
+      'Local facial comparison completed. ' +
+      'Automatic identity approval is not enabled.';
 
     db.prepare(
       `INSERT INTO liveness_sessions
        (user_id, session_key, status, confidence, verification_method, created_at, completed_at)
-       VALUES (?, ?, ?, ?, 'local_sequence', ?, ?)`
+       VALUES (?, ?, ?, ?, 'local_sequence_sface', ?, ?)`
     ).run(req.userId!, challengeId, status, confidence, row.issued_at, utcNow());
 
-    res.json({ status, confidence, message, user: getEnrollmentState(req.userId!) });
+    res.json({ status, confidence, message, similarities, user: getEnrollmentState(req.userId!) });
   });
 
   app.get('/api/verification-status', requireAuth, (req: AuthedRequest, res) => {
